@@ -27,9 +27,10 @@ NetUtils::make_socket_unblock(int fd)
 void
 NetUtils::bind_and_listen(int fd, const char* ip_addr, uint16_t port)
 {
-    sockaddr* addr = sock_addr(ip_addr, port);
+    struct sockaddr addr;
+    set_sockaddr(ip_addr, port, &addr);
 
-    if(bind(fd, addr,
+    if(bind(fd, &addr,
          sizeof(struct sockaddr)) == -1)
     {
         handle_error("bind");
@@ -48,12 +49,11 @@ NetUtils::handle_error(const char* msg)
     exit(EXIT_FAILURE);
 }
 
-sockaddr* 
-sock_addr(const char* ip_addr, uint16_t port)
+void
+NetUtils::set_sockaddr(const char* ip_addr, uint16_t port, sockaddr* _dest)
 {
-    sockaddr_in in;
-    in.sin_family = AF_INET;
-    in.sin_addr.s_addr = inet_addr(ip_addr);
-    in.sin_port = htons(port);
-    return (sockaddr*)&in;
+    sockaddr_in* in = (sockaddr_in*)_dest;
+    in->sin_family = AF_INET;
+    in->sin_addr.s_addr = inet_addr(ip_addr);
+    in->sin_port = htons(port);
 }
