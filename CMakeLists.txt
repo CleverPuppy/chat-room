@@ -4,3 +4,4 @@ project(chat-room)
 
 add_subdirectory(server)
 add_subdirectory(netutils)
+add_subdirectory(cproto)
