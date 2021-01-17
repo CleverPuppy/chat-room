@@ -44,11 +44,8 @@ CProtoDecoder::init()
 void
 CProtoDecoder::clear()
 {
-    CProtoMsg* pMsg = nullptr;
     while(!mMsgQ.empty())
     {
-        pMsg = mMsgQ.front();
-        delete pMsg;
         mMsgQ.pop();
     }
 }
@@ -105,7 +102,7 @@ bool CProtoDecoder::parser(void *data, size_t len)
             CProtoMsg* pMsg = nullptr;
             pMsg = new CProtoMsg;
             *pMsg = mCurMsg;
-            mMsgQ.push(pMsg);
+            mMsgQ.emplace(pMsg);
         }
     }
 
@@ -116,7 +113,7 @@ bool CProtoDecoder::parser(void *data, size_t len)
     }
 }
 
-CProtoMsg *CProtoDecoder::front()
+std::shared_ptr<CProtoMsg> CProtoDecoder::front()
 {
     return mMsgQ.front();
 }

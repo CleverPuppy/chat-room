@@ -2,6 +2,7 @@
 #include "json/json.h"
 #include <cstdint>
 #include <queue>
+#include <memory>
 
 constexpr uint8_t CPROTO_MAGIC = 88;
 constexpr uint32_t CPROTO_MAX_SIZE = 10 * 1024 * 1024;
@@ -43,7 +44,7 @@ public:
     void clear();
     bool parser(void* data, size_t len);
     bool empty();
-    CProtoMsg* front();
+    std::shared_ptr<CProtoMsg> front();
     void pop();
 private:
     bool parserHead(uint8_t **curData, uint32_t& curLen,
@@ -52,7 +53,7 @@ private:
                     uint32_t& parserLen, bool& parserBreak);
 
     CProtoMsg mCurMsg;
-    std::queue<CProtoMsg*> mMsgQ;
+    std::queue<std::shared_ptr<CProtoMsg>> mMsgQ;
     std::vector<uint8_t> mCurReserved;
     CProtoParserStatus mCurParserStatus;
 };
