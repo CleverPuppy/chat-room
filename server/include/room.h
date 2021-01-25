@@ -4,6 +4,8 @@
 
 #include "people.h"
 
+class People;
+
 enum class ROOM_STATES
 {
     OPEN,

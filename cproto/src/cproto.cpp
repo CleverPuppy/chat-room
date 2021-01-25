@@ -99,10 +99,11 @@ bool CProtoDecoder::parser(void *data, size_t len)
 
         if(mCurParserStatus == CProtoParserStatus::ON_PARSER_BODY)
         {
-            CProtoMsg* pMsg = nullptr;
-            pMsg = new CProtoMsg;
-            *pMsg = mCurMsg;
-            mMsgQ.emplace(pMsg);
+            // CProtoMsg* pMsg = nullptr;
+            // pMsg = new CProtoMsg;
+            // *pMsg = mCurMsg;
+            // mMsgQ.emplace(pMsg);
+            mMsgQ.push(std::shared_ptr<CProtoMsg>(new CProtoMsg{mCurMsg}));
         }
     }
 
@@ -121,6 +122,11 @@ std::shared_ptr<CProtoMsg> CProtoDecoder::front()
 void CProtoDecoder::pop()
 {
     mMsgQ.pop();
+}
+
+bool CProtoDecoder::empty() 
+{
+    return mMsgQ.empty();
 }
 
 bool CProtoDecoder::parserHead(uint8_t **curData, uint32_t &curLen,

@@ -6,6 +6,7 @@
 
 #include "server.h"
 #include "netutils.h"
+#include <iostream>
 
 Server::Server()
 {
@@ -30,6 +31,14 @@ Server::Server()
         NetUtils::handle_error("epoll_ctl: listen_sock");
     }
 
+}
+
+Server::~Server()
+{
+}
+
+void Server::run() 
+{
     int ndfs, conn_sock;
     sockaddr peer_addr;
     socklen_t peer_addr_len;
@@ -57,17 +66,62 @@ Server::Server()
                 {
                     NetUtils::handle_error("epoll_ctl");
                 }
+                addPeople(conn_sock);
+                #ifndef NDEBUG
+                printf("New connecting\n");
+                #endif
             }else
             {
                 /*
                  *                 TODO Read data
                  *                  do_use_fd(events[n].data.fd)
                 */
+                int incommingFd = events[n].data.fd;
+                #ifndef NDEBUG
+                printf("Reading from %d\n", incommingFd);
+                #endif
+                auto peoplePt = getPeoplePt(incommingFd);
+                // TODO read data
+                if(peoplePt)
+                {
+                    peoplePt->readFromFd();
+                    while (auto msgPt = peoplePt->popMsg())
+                    {
+                        std::cout << msgPt->body << std::endl;
+                    }
+                }else{
+                    printf("peoplePt is nullptr\n");
+                }
             }
         }
     }
 }
 
-Server::~Server()
+inline decltype(Server::peoples)::iterator  Server::getPeople(int fd) 
 {
+    return peopleMap[fd];
+}
+
+inline void Server::addPeople(int fd) 
+{
+    peoples.emplace_front(new People(fd));
+    if(peopleMap.count(fd) != 0)
+    {
+        removePeople(fd);
+    }
+    peopleMap.insert({fd, peoples.begin()});
+}
+
+inline void Server::removePeople(int fd) 
+{
+    if(peopleMap.count(fd) != 0)
+    {
+        auto it = getPeople(fd);
+        peoples.erase(it);
+    }
+}
+
+inline std::shared_ptr<People> Server::getPeoplePt(int fd) 
+{
+    return *getPeople(fd);
 }

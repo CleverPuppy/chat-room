@@ -6,6 +6,7 @@
 int main()
 {
     std::cout <<"Hello World!\n"<<std::endl;
-    auto server = Server();
+    Server server{};
+    server.run();
     return 0;
 }

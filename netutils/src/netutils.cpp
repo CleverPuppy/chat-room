@@ -44,7 +44,8 @@ NetUtils::bind_and_listen(int fd, const char* ip_addr, uint16_t port)
 
 void
 NetUtils::handle_error(const char* msg)
-{
+{   
+    printf("fatal error : %s", msg);
     perror(msg);
     exit(EXIT_FAILURE);
 }
