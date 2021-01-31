@@ -4,18 +4,15 @@ add_library(${PROJECT_NAME} STATIC
     src/cproto.cpp
 )
 
-
+message(jsoncpp_include : ${jsoncpp_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME}
-    PRIVATE
-        ${PROJECT_SOURCE_DIR}/include/
-)
-
-link_directories(
-    ${PROJECT_SOURCE_DIR}/lib
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
+        ${jsoncpp_SOURCE_DIR}/include
 )
 
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE
+    PUBLIC
         jsoncpp
 )
 
@@ -27,10 +24,11 @@ add_executable(${PROJECT_TEST}
 )
 
 target_include_directories(${PROJECT_TEST}
-    PRIVATE
-        ${PROJECT_SOURCE_DIR}/include/
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
+        ${jsoncpp_SOURCE_DIR}/include
 )
 target_link_libraries(${PROJECT_TEST}
-    PRIVATE
-        jsoncpp
+    PUBLIC
+        jsoncpp #have to use sharedlib ? #jsoncpp_static don't have Value::operator= implementation
 )

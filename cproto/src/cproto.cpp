@@ -1,6 +1,7 @@
 #include "cproto.h"
 #include "arpa/inet.h"
 #include <memory>
+#include <cstring>
 
 
 void

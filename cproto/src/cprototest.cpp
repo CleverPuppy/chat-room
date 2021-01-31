@@ -9,6 +9,7 @@ int main()
 
     CProtoMsg msg{};
     msg.body = root;
+    // msg.body.append(root);
     uint32_t len = 0;
     CProtoEncoder encoder{};
     auto pMsgEncoded = encoder.encode(&msg, len);
