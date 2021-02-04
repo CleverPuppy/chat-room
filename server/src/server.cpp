@@ -8,13 +8,16 @@
 #include "netutils.h"
 #include <iostream>
 
+constexpr const char* SERVER_ADDRESS = "127.0.0.1";
+constexpr uint16_t PORT = 8080;
+
 Server::Server()
 {
     listen_sock = NetUtils::create_socket();
     if (listen_sock != -1)
     {
         NetUtils::make_socket_unblock(listen_sock);
-        NetUtils::bind_and_listen(listen_sock, "127.0.0.1", 8080);
+        NetUtils::bind_and_listen(listen_sock, SERVER_ADDRESS, PORT);
     }
 
     epollfd = epoll_create1(0);
@@ -30,7 +33,7 @@ Server::Server()
     {
         NetUtils::handle_error("epoll_ctl: listen_sock");
     }
-
+    printf("Server Starting %s@%d\n", SERVER_ADDRESS, PORT);
 }
 
 Server::~Server()
