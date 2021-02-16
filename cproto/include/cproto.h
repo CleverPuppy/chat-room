@@ -1,12 +1,23 @@
 #pragma once
 #include "json/json.h"
 #include <cstdint>
+#include <cassert>
 #include <queue>
 #include <memory>
 
-constexpr uint8_t CPROTO_MAGIC = 88;
+constexpr uint8_t CPROTO_VERSION = 1;
+constexpr uint8_t CPROTO_RESPONSE_MAGIC = 81;
+constexpr uint8_t CPROTO_REQUEST_MAGIC = 82;
+constexpr uint8_t CPROTO_MESSAGE_MAGIC = 83;
+constexpr uint16_t CPROTO_SERVER = 0; 
 constexpr uint32_t CPROTO_MAX_SIZE = 10 * 1024 * 1024;
 constexpr uint32_t CPROTO_HEAD_SIZE = 8;
+
+enum class ResponseStatus : uint8_t
+{
+    SUCCESS = 200,
+    INTERNAL_ERROR = 110,
+};
 
 struct CProtoHead
 {
@@ -25,9 +36,9 @@ struct CProtoMsg
 class CProtoEncoder
 {
 public:
-    uint8_t* encode(CProtoMsg* pMsg, uint32_t& len);
+    static std::shared_ptr<uint8_t> encode(CProtoMsg* pMsg, uint32_t& len);
 private:
-    void headEncode(uint8_t* pData, CProtoMsg* pMsg);
+    static void headEncode(uint8_t* pData, CProtoMsg* pMsg);
 };
 
 enum class CProtoParserStatus
@@ -57,3 +68,53 @@ private:
     std::vector<uint8_t> mCurReserved;
     CProtoParserStatus mCurParserStatus;
 };
+static void setDefaultHead(CProtoMsg& msg, uint8_t magic_number)
+{
+    msg.head.version = CPROTO_VERSION;
+    msg.head.magic = magic_number;
+    msg.head.server = CPROTO_SERVER;
+}
+
+static CProtoMsg genInfoResponse(ResponseStatus status, const std::string& info)
+{
+    CProtoMsg msg;
+    setDefaultHead(msg, CPROTO_RESPONSE_MAGIC);
+    msg.body["status"] = int(status);
+    msg.body["info"] = info;
+    return msg;
+}
+
+template<typename... Args>
+static CProtoMsg genCmdRequest(const std::string& cmdName, Args... args)
+{
+    CProtoMsg msg;
+    setDefaultHead(msg, CPROTO_REQUEST_MAGIC);
+    msg.body["cmd"] = cmdName;
+    appendArgs(msg, args...);
+    return msg;
+}
+template<typename T, typename... Ts>
+static void appendArgs(CProtoMsg& msg, T arg, Ts... args)
+{
+    msg.body["args"].append(arg);
+    appendArgs(msg, args...);
+}
+static void appendArgs(CProtoMsg& msg)
+{
+    // break callstack
+}
+
+static bool isMsgSuccess(const CProtoMsg& msg)
+{
+    if(msg.body["status"] != Json::nullValue 
+        && msg.body["status"].asInt() == int(ResponseStatus::SUCCESS))
+    {
+        return true;
+    }
+    return false;
+}
+
+static bool isValidMagic(uint8_t magic)
+{
+    return magic == CPROTO_MESSAGE_MAGIC || magic == CPROTO_REQUEST_MAGIC || magic == CPROTO_RESPONSE_MAGIC;
+}

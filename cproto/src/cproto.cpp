@@ -7,10 +7,10 @@
 void
 CProtoEncoder::headEncode(uint8_t* pData, CProtoMsg* pMsg)
 {
-    *pData = 1;
+    *pData = pMsg->head.version;
     ++pData;
 
-    *pData = CPROTO_MAGIC;
+    *pData = pMsg->head.magic;
     ++pData;
 
     *(uint16_t *)pData = htons(pMsg->head.server);
@@ -19,19 +19,19 @@ CProtoEncoder::headEncode(uint8_t* pData, CProtoMsg* pMsg)
     *(uint32_t *)pData = htonl(pMsg->head.len);
 }
 
-uint8_t*
+std::shared_ptr<uint8_t>
 CProtoEncoder::encode(CProtoMsg * pMsg, uint32_t & len)
 {
-    uint8_t *pData = nullptr;
+    std::shared_ptr<uint8_t>pData;
     Json::FastWriter fwrite{};
 
     std::string bodyStr = fwrite.write(pMsg->body);
     len = CPROTO_HEAD_SIZE + (uint32_t)bodyStr.size();
     pMsg->head.len = len;
 
-    pData = new uint8_t[len];
-    headEncode(pData, pMsg);
-    std::memcpy(pData + CPROTO_HEAD_SIZE, bodyStr.data(),
+    pData.reset(new uint8_t[len]);
+    headEncode(pData.get(), pMsg);
+    std::memcpy(pData.get() + CPROTO_HEAD_SIZE, bodyStr.data(),
             bodyStr.size());
     return pData;
 }
@@ -146,7 +146,7 @@ bool CProtoDecoder::parserHead(uint8_t **curData, uint32_t &curLen,
     pData++;
     mCurMsg.head.magic = *pData;
     pData++;
-    if(CPROTO_MAGIC != mCurMsg.head.magic)
+    if(!isValidMagic(mCurMsg.head.magic))
     {
         return false;
     }

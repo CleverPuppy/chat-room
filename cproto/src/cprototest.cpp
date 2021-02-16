@@ -16,7 +16,7 @@ int main()
     
     CProtoDecoder decoder{};
     decoder.init();
-    decoder.parser((void*)pMsgEncoded, len);
+    decoder.parser((void*)pMsgEncoded.get(), len);
     std::cout << decoder.front()->body;
     return 0;
 }
