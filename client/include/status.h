@@ -6,5 +6,6 @@ enum class ClientStatus{
     WAITING_FOR_LOGING,
     LOGGING,
     REGISTERING,
-    WAITING_FOR_CMD
+    WAITING_FOR_CMD,
+    EXIT
 };
