@@ -8,7 +8,7 @@ bool Login::login(const std::string& username, const std::string& password, int 
 {
     // TODO check parameters validity
     auto encryptedPassword = crptPassword(password);
-    auto msg = genCmdRequest(LOGIN_CMD, username, encryptedPassword);
+    auto msg = CProtoMsgManager::genCmdRequest(LOGIN_CMD, username, encryptedPassword);
     uint32_t msgLen;
     auto encodedMsg = CProtoEncoder::encode(&msg, msgLen);
 
@@ -19,18 +19,21 @@ bool Login::login(const std::string& username, const std::string& password, int 
     };
 
     printf("Logining ... Waiting for server...\n");
-    // TODO BLOCK AND WAITING FOR SERVER
     return true;
 }
 
 bool Login::registerAndLogin(const std::string& username, const std::string& password, int fd) 
 {
     auto encryptedPassword = crptPassword(password);
-    auto msg = genCmdRequest(REGISTER_CMD, username, encryptedPassword);
+    auto msg = CProtoMsgManager::genCmdRequest(REGISTER_CMD, username, encryptedPassword);
     uint32_t msgLen;
     auto encodedMsg = CProtoEncoder::encode(&msg, msgLen);
-    // TODO send registerMsg and waiting for answer
-    login(username, password, fd);
+    if(send(fd, encodedMsg.get(), msgLen, MSG_CONFIRM) == -1)
+    {
+        fprintf(stderr, "send ERROR:%s\n", strerror(errno));
+        return false;
+    }
+    printf("Registering ... Waiting for server...\n");
     return true;
 }
 

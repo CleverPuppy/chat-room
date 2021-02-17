@@ -68,51 +68,6 @@ private:
     std::vector<uint8_t> mCurReserved;
     CProtoParserStatus mCurParserStatus;
 };
-static void setDefaultHead(CProtoMsg& msg, uint8_t magic_number)
-{
-    msg.head.version = CPROTO_VERSION;
-    msg.head.magic = magic_number;
-    msg.head.server = CPROTO_SERVER;
-}
-
-static CProtoMsg genInfoResponse(ResponseStatus status, const std::string& info)
-{
-    CProtoMsg msg;
-    setDefaultHead(msg, CPROTO_RESPONSE_MAGIC);
-    msg.body["status"] = int(status);
-    msg.body["info"] = info;
-    return msg;
-}
-
-template<typename... Args>
-static CProtoMsg genCmdRequest(const std::string& cmdName, Args... args)
-{
-    CProtoMsg msg;
-    setDefaultHead(msg, CPROTO_REQUEST_MAGIC);
-    msg.body["cmd"] = cmdName;
-    appendArgs(msg, args...);
-    return msg;
-}
-template<typename T, typename... Ts>
-static void appendArgs(CProtoMsg& msg, T arg, Ts... args)
-{
-    msg.body["args"].append(arg);
-    appendArgs(msg, args...);
-}
-static void appendArgs(CProtoMsg& msg)
-{
-    // break callstack
-}
-
-static bool isMsgSuccess(const CProtoMsg& msg)
-{
-    if(msg.body["status"] != Json::nullValue 
-        && msg.body["status"].asInt() == int(ResponseStatus::SUCCESS))
-    {
-        return true;
-    }
-    return false;
-}
 
 static bool isValidMagic(uint8_t magic)
 {

@@ -3,9 +3,11 @@
 #include "netinet/in.h"
 #include "sys/epoll.h"
 #include "stdio.h"
+#include "unistd.h"
 
 #include "server.h"
 #include "netutils.h"
+#include "login.h"
 #include <iostream>
 
 constexpr const char* SERVER_ADDRESS = "127.0.0.1";
@@ -38,6 +40,8 @@ Server::Server()
 
 Server::~Server()
 {
+    close(listen_sock);
+    close(epollfd);
 }
 
 void Server::run() 
@@ -69,7 +73,7 @@ void Server::run()
                 {
                     NetUtils::handle_error("epoll_ctl");
                 }
-                addPeople(conn_sock);
+                msgManager.establishNewConnection(conn_sock);
                 #ifndef NDEBUG
                 printf("New connecting\n");
                 #endif
@@ -83,48 +87,40 @@ void Server::run()
                 #ifndef NDEBUG
                 printf("Reading from %d\n", incommingFd);
                 #endif
-                auto peoplePt = getPeoplePt(incommingFd);
-                // TODO read data
-                if(peoplePt)
+                msgManager.readData(incommingFd);
+                while (auto msgPt = msgManager.getMsg(incommingFd))
                 {
-                    peoplePt->readFromFd();
-                    while (auto msgPt = peoplePt->popMsg())
+                    std::cout << msgPt->body << std::endl;
+                    if(msgPt->body["cmd"] == LOGIN_CMD || msgPt->body["cmd"] == REGISTER_CMD)
                     {
-                        std::cout << msgPt->body << std::endl;
+                        auto args = msgPt->body["args"];
+                        if(args.isArray())
+                        {
+                            if(args.size() != 2)
+                            {
+                                fprintf(stderr, "wrong args size\n");
+                                break;
+                            }
+                            std::string username = args[0].asString();
+                            std::string password = args[1].asString();
+                            #ifndef NDEBUG
+                            fprintf(stdout, "username : %s, password: %s\n", username.c_str(), password.c_str());
+                            #endif
+                            if(msgPt->body["cmd"] == LOGIN_CMD)
+                            {
+                                userManager.loginUser(incommingFd, username, password);
+                            }
+                            if(msgPt->body["cmd"] == REGISTER_CMD)
+                            {
+                                userManager.registerAndLoginUser(incommingFd, username, password);
+                            }
+                        }else
+                        {
+                            fprintf(stderr, "invalid request\n");
+                        }
                     }
-                }else{
-                    printf("peoplePt is nullptr\n");
                 }
             }
         }
     }
-}
-
-inline decltype(Server::peoples)::iterator  Server::getPeople(int fd) 
-{
-    return peopleMap[fd];
-}
-
-inline void Server::addPeople(int fd) 
-{
-    peoples.emplace_front(new People(fd));
-    if(peopleMap.count(fd) != 0)
-    {
-        removePeople(fd);
-    }
-    peopleMap.insert({fd, peoples.begin()});
-}
-
-inline void Server::removePeople(int fd) 
-{
-    if(peopleMap.count(fd) != 0)
-    {
-        auto it = getPeople(fd);
-        peoples.erase(it);
-    }
-}
-
-inline std::shared_ptr<People> Server::getPeoplePt(int fd) 
-{
-    return *getPeople(fd);
 }

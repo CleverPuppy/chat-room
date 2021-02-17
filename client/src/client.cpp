@@ -9,6 +9,8 @@
 #include <cstring>
 #include <cassert>
 #include "unistd.h"
+#include "sys/time.h"
+#include "sys/types.h"
 
 constexpr const char* SERVER_ADDRESS = "127.0.0.1";
 constexpr uint16_t PORT = 8080;
@@ -46,6 +48,7 @@ void Client::connectToServer()
     if(conFlag == 0)
     {
         printf("Connected!\n");
+        msgManager.establishNewConnection(fd);
         status = ClientStatus::WAITING_FOR_LOGING;
     }else if(conFlag == -1)
     {
@@ -81,6 +84,35 @@ void Client::waitingForLogin()
                 {
                     Login::registerAndLogin(cmds[1],cmds[2], fd);
                 }
+
+                fd_set rfds;
+                timeval tv{5, 0};
+                FD_ZERO(&rfds);
+                FD_SET(fd, &rfds);
+                int select_ret = select(fd + 1, &rfds, NULL, NULL, &tv);
+                if(select_ret == -1)
+                {
+                    fprintf(stderr, "select() error\n");
+                }else if(select_ret)
+                {
+                    msgManager.readData(fd);
+                    if(auto msgPt = msgManager.getMsg(fd))
+                    {
+                        std::cout << msgPt->body << std::endl;
+                        if(CProtoMsgManager::isMsgSuccess(*msgPt))
+                        {
+                            token = msgPt->body["info"].asString();
+                            printf("Login Successful!\n");
+                            status = ClientStatus::WAITING_FOR_CMD;
+                        }else{
+                            auto info = msgPt->body["info"].asString();
+                            printf("Login Failed, error %s\n", info.c_str());
+                        }
+                    }
+                }else{
+                    fprintf(stderr, "timeout\n");
+                }
+
             }else break;
         }
     }
@@ -90,7 +122,7 @@ void Client::waitingForLoginHint()
 {
     printf("\t\t\t\t\tLogin or Register\n\n\n\n"
             "Cmds:\n"
-            "Login:\t\tlogin [username] [password]\n"
+            "Login:   \t\tlogin [username] [password]\n"
             "Register:\t\tregister [username] [password]\n");
 }
 

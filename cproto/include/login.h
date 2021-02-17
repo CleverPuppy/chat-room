@@ -1,9 +1,10 @@
 #pragma once
 
-#include "people.h"
 #include "cproto.h"
+#include "cprotomsg.h"
 #include <string>
 
+class People;
 constexpr const char* LOGIN_CMD = "login";
 constexpr const char* REGISTER_CMD = "register";
 

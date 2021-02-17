@@ -19,8 +19,9 @@ public:
 private:
     ClientStatus status;
     int fd;
-    
     int retryTimes = 0;
+    CProtoMsgManager msgManager;
+    UserToken token;
 
     void connectToServer();
     void waitingForLogin();

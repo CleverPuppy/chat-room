@@ -6,23 +6,42 @@
 #include "room.h"
 #include "cproto.h"
 
+using UserId = uint64_t;
+using UserToken = std::string;
+using UserName = std::string;
+using UserPassword = std::string;
+
 struct PeopleProfile
 {
-    std::string user_name;
-    std::uint64_t user_id;
+    UserName user_name;
+    UserPassword password;
+    UserId user_id;
+    UserToken token;
+
+    PeopleProfile(const UserName& username, 
+           const UserPassword& password,
+           const UserId& ID,
+           const UserToken& token)
+        : user_name(username), password(password), user_id(ID), token(token) {}
 };
 
 class People
 {
-private:
-    int fd;
+public:
     PeopleProfile profile;
     std::list<std::shared_ptr<Room>> inRooms;
-    CProtoDecoder decoder;
-public:
-    People(int _fd): fd(_fd) {}
+
+    People(const UserName& username, 
+           const UserPassword& password,
+           const UserId& ID,
+           const UserToken& token = "")
+        : profile(username, password, ID, token) {}
     ~People() = default;
 
-    void readFromFd();
-    std::shared_ptr<CProtoMsg> popMsg();
+    const UserId& getUserID(){ return profile.user_id;}
+    const UserName& getUserName() { return profile.user_name;}
+    const UserToken& getUserToken() {return profile.token;}
+    const UserPassword& getUserPassword() {return profile.password;}
+
+    void updateToken(const UserToken& token){ profile.token = token;}
 };

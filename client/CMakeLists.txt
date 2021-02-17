@@ -2,7 +2,6 @@ project(client)
 
 add_executable( ${PROJECT_NAME}
     src/client.cpp
-    src/login.cpp
     src/main.cpp
 )
 
