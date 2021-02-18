@@ -5,6 +5,7 @@ set(SOURCES
     src/server.cpp
     src/people.cpp
     src/usermanager.cpp
+    src/roommanager.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

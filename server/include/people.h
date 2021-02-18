@@ -6,10 +6,7 @@
 #include "room.h"
 #include "cproto.h"
 
-using UserId = uint64_t;
-using UserToken = std::string;
-using UserName = std::string;
-using UserPassword = std::string;
+class Room;
 
 struct PeopleProfile
 {
@@ -29,7 +26,6 @@ class People
 {
 public:
     PeopleProfile profile;
-    std::list<std::shared_ptr<Room>> inRooms;
 
     People(const UserName& username, 
            const UserPassword& password,
