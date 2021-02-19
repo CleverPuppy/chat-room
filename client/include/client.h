@@ -26,6 +26,8 @@ private:
     void connectToServer();
     void waitingForLogin();
     void waitingForLoginHint();
+    void waitingForCmd();
+    void waitingForCmdHint();
     void statusTransfrom();
 
     bool isCmdValid(const std::vector<std::string>& cmds);

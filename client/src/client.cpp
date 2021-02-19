@@ -1,6 +1,7 @@
 #include "client.h"
 #include "netutils.h"
 #include "login.h"
+#include "cmds.h"
 #include <cstdio>
 #include <string>
 #include <iostream>
@@ -65,7 +66,7 @@ void Client::waitingForLogin()
         waitingForLoginHint();
         std::string line;
         std::vector<std::string> cmds;
-        while (std::getline(std::cin, line) && status == ClientStatus::WAITING_FOR_LOGING)
+        if (std::getline(std::cin, line) && status == ClientStatus::WAITING_FOR_LOGING)
         {
             cmds.clear();
             std::stringstream ss{line};
@@ -129,12 +130,10 @@ void Client::waitingForLoginHint()
 bool Client::isCmdValid(const std::vector<std::string>& cmds) 
 {
     assert(!cmds.empty());
-    constexpr const char* registerCmd = "register";
-    constexpr const char* loginCmd = "login";
     switch (status)
     {
     case ClientStatus::WAITING_FOR_LOGING:
-        if(cmds.front() != registerCmd && cmds.front() != loginCmd)
+        if(cmds.front() != CMD_REGISTER && cmds.front() != CMD_LOGIN)
         {
             wrongCmdNameHint(cmds.front());
             return false;
@@ -145,7 +144,55 @@ bool Client::isCmdValid(const std::vector<std::string>& cmds)
             return false;
         }
         break;
-    
+    case ClientStatus::WAITING_FOR_CMD:
+        if(cmds.front() == CMD_ROOM_CREATE)
+        {
+            if(cmds.size() != 2)
+            {
+                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 2 - 1);
+                return false;
+            }
+        }else if(cmds.front() == CMD_ROOM_JOIN)
+        {
+            if(cmds.size() != 2)
+            {
+                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 2 - 1);
+                return false;
+            }
+        }else if(cmds.front() == CMD_ROOM_LOCK)
+        {
+            if(cmds.size() != 2)
+            {
+                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 2 - 1);
+                return false;
+            }
+        }else if(cmds.front() == CMD_ROOM_UNLOCK)
+        {
+            if(cmds.size() != 2)
+            {
+                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 2 - 1);
+                return false;
+            }
+        }else if(cmds.front() == CMD_CHAT_SEND)
+        {
+            if(cmds.size() != 3)
+            {
+                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 3 - 1);
+                return false;
+            }
+        }else if(cmds.front() == CMD_QUIT)
+        {
+            if(cmds.size() != 1)
+            {
+                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 1 - 1);
+                return false;
+            }
+        }
+        else{
+            wrongCmdNameHint(cmds.front());
+            return false;
+        }
+        break;
     default:
         return false;
     }
@@ -191,11 +238,78 @@ void Client::statusTransfrom()
     case ClientStatus::WAITING_FOR_LOGING:
         waitingForLogin();
         break;
+    case ClientStatus::WAITING_FOR_CMD:
+        waitingForCmd();
+        break;
     case ClientStatus::EXIT:
-        exit(0);
+        exit(EXIT_SUCCESS);
         break;
     default:
-        printf("Exit!\n");
+        exit(EXIT_FAILURE);
         break;
     }
+}
+
+void Client::waitingForCmdHint() 
+{
+    fprintf(stdout, 
+            "Cmds:\n"
+            "Create Room:   \t\t createroom [roomname]\n"
+            "Join Room:     \t\t joinroom [roomid]\n"
+            "LockRoom:      \t\t lockroom [roomid]\n"
+            "UnlockRoom:    \t\t unlockroom [roomid]\n"
+            "SendMessage:   \t\t send [roomid] [info]\n"
+            "Quit:          \t\t quit\n");
+    fflush(stdout);
+}
+
+void Client::waitingForCmd() 
+{
+    waitingForCmdHint();
+    while (status == ClientStatus::WAITING_FOR_CMD)
+    {
+        std::string line;
+        std::vector<std::string> cmds;
+        if (std::getline(std::cin, line) && status == ClientStatus::WAITING_FOR_CMD)
+        {
+            cmds.clear();
+            std::stringstream ss{line};
+            std::string tmp;
+            while(ss >> tmp)
+            {
+                cmds.push_back(tmp);
+            }
+            if(isCmdValid(cmds))
+            {
+                if(cmds.front() == CMD_ROOM_CREATE)
+                {
+                    auto msg = CProtoMsgManager::genCmdRequest(CMD_ROOM_CREATE, cmds[1]);
+                    msgManager.encodeAndSendMsg(msg, fd);
+                }else if(cmds.front() == CMD_ROOM_JOIN)
+                {
+                    auto msg = CProtoMsgManager::genCmdRequest(CMD_ROOM_JOIN, cmds[1]);
+                    msgManager.encodeAndSendMsg(msg, fd);
+                }else if(cmds.front() == CMD_ROOM_UNLOCK)
+                {
+                    auto msg = CProtoMsgManager::genCmdRequest(CMD_ROOM_UNLOCK, cmds[1]);
+                    msgManager.encodeAndSendMsg(msg, fd);
+                }else if(cmds.front() == CMD_ROOM_LOCK)
+                {
+                    auto msg = CProtoMsgManager::genCmdRequest(CMD_ROOM_LOCK, cmds[1]);
+                    msgManager.encodeAndSendMsg(msg, fd);
+                }else if(cmds.front() == CMD_CHAT_SEND)
+                {
+                    RoomIDType roomId = std::stoi(cmds[1]);
+                    auto msg = CProtoMsgManager::genChatMsg(token, roomId, cmds[2]);
+                    msgManager.encodeAndSendMsg(msg, fd);
+                }else if(cmds.front() == CMD_QUIT)
+                {
+                    status = ClientStatus::EXIT;
+                }else{
+                    fprintf(stderr, "unknow cmd\n");
+                }
+            }
+        }
+    }
+    
 }
