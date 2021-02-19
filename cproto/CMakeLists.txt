@@ -4,6 +4,7 @@ add_library(${PROJECT_NAME} STATIC
     src/cproto.cpp
     src/cprotomsg.cpp
     src/login.cpp
+    src/chat.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

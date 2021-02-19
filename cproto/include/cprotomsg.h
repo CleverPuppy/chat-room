@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include "cproto.h"
+#include "types.h"
 class CProtoMsgManager
 {
 using DecoderPtr = std::shared_ptr<CProtoDecoder>;
@@ -9,6 +10,9 @@ public:
     CProtoMsgManager(const CProtoMsgManager&) = delete;
     CProtoMsgManager& operator=(const CProtoMsgManager&) = delete;
 
+    static CProtoMsg genChatMsg(const UserToken& token,
+                                const RoomIDType& roomID,
+                                const std::string& info);
     static CProtoMsg genInfoResponse(ResponseStatus status, const std::string& info)
     {
         CProtoMsg msg;

@@ -76,3 +76,11 @@ int CProtoMsgManager::encodeAndSendMsg(CProtoMsg& msg, int fd)
     };
     return ret;
 }
+
+CProtoMsg CProtoMsgManager::genChatMsg(const UserToken& token,
+                                const RoomIDType& roomID,
+                                const std::string& info) 
+{
+    auto msg = genCmdRequest("send", token, roomID, info);
+    return msg;
+}
