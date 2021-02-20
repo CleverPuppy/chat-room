@@ -23,6 +23,14 @@ public:
     }
 
     template<typename... Args>
+    static CProtoMsg genTokenCmdRequest(const std::string& cmdName, const UserToken& token, Args... args)
+    {
+        auto msg = genCmdRequest(cmdName, args...);
+        msg.body["token"] = token;
+        return msg;
+    }
+
+    template<typename... Args>
     static CProtoMsg genCmdRequest(const std::string& cmdName, Args... args)
     {
         CProtoMsg msg;

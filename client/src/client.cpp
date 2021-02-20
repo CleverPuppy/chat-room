@@ -283,19 +283,19 @@ void Client::waitingForCmd()
             {
                 if(cmds.front() == CMD_ROOM_CREATE)
                 {
-                    auto msg = CProtoMsgManager::genCmdRequest(CMD_ROOM_CREATE, cmds[1]);
+                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_CREATE, token, cmds[1]);
                     msgManager.encodeAndSendMsg(msg, fd);
                 }else if(cmds.front() == CMD_ROOM_JOIN)
                 {
-                    auto msg = CProtoMsgManager::genCmdRequest(CMD_ROOM_JOIN, cmds[1]);
+                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_JOIN, token, cmds[1]);
                     msgManager.encodeAndSendMsg(msg, fd);
                 }else if(cmds.front() == CMD_ROOM_UNLOCK)
                 {
-                    auto msg = CProtoMsgManager::genCmdRequest(CMD_ROOM_UNLOCK, cmds[1]);
+                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_UNLOCK, token, cmds[1]);
                     msgManager.encodeAndSendMsg(msg, fd);
                 }else if(cmds.front() == CMD_ROOM_LOCK)
                 {
-                    auto msg = CProtoMsgManager::genCmdRequest(CMD_ROOM_LOCK, cmds[1]);
+                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_LOCK, token, cmds[1]);
                     msgManager.encodeAndSendMsg(msg, fd);
                 }else if(cmds.front() == CMD_CHAT_SEND)
                 {
