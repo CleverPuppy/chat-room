@@ -219,7 +219,7 @@ void Server::chatHandler(const MsgPtType& msgPt, int fd)
     if(userid)
     {
         RoomIDType roomid = msgPt->body["args"][0].asUInt();
-        if(roomManager.verifyUserInRoom(roomid, userid, fd))
+        if(roomManager.verifyRoomExist(roomid, fd) && roomManager.verifyUserInRoom(roomid, userid, fd))
         {
             if(cmd_name == CMD_CHAT_SEND)
             {
