@@ -1,6 +1,8 @@
 #include "cprotomsg.h"
+#include <iostream>
 #include "unistd.h"
 #include "sys/socket.h"
+#include "cmds.h"
 
 
 void CProtoMsgManager::establishNewConnection(int fd) 
@@ -74,6 +76,7 @@ int CProtoMsgManager::encodeAndSendMsg(CProtoMsg& msg, int fd)
     {
         fprintf(stderr, "send ERROR :%s\n", strerror(errno));
     };
+    std::cout << "sendMsg : " << msg.body << std::endl;
     return ret;
 }
 
@@ -81,6 +84,6 @@ CProtoMsg CProtoMsgManager::genChatMsg(const UserToken& token,
                                 const RoomIDType& roomID,
                                 const std::string& info) 
 {
-    auto msg = genCmdRequest("send", token, roomID, info);
+    auto msg = genTokenCmdRequest(CMD_CHAT_SEND, token, roomID, info);
     return msg;
 }

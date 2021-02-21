@@ -2,6 +2,19 @@
 #include <unordered_map>
 #include "cproto.h"
 #include "types.h"
+
+enum class ResponseStatus : uint8_t
+{
+    SUCCESS,
+    INTERNAL_ERROR,
+    
+    CHAT_LIST,
+    ROOM_LIST,
+    ROOM_ID,
+    TOKEN,
+    TOKEN_FAILED
+};
+
 class CProtoMsgManager
 {
 using DecoderPtr = std::shared_ptr<CProtoDecoder>;
@@ -25,8 +38,9 @@ public:
     template<typename... Args>
     static CProtoMsg genTokenCmdRequest(const std::string& cmdName, const UserToken& token, Args... args)
     {
-        auto msg = genCmdRequest(cmdName, args...);
-        msg.body["token"] = token;
+        std::pair<std::string, std::string> p = {"token", token};
+        auto msg = genCmdRequest(cmdName, p, args...);
+        // msg.body["token"] = token;
         return msg;
     }
 
@@ -49,7 +63,10 @@ public:
         }
         return false;
     }
-
+    static UserToken getToken(const CProtoMsg& msg)
+    {
+        return msg.body["token"].asString();
+    }
     static int encodeAndSendMsg(CProtoMsg& msg, int fd);
 
     void establishNewConnection(int fd);
@@ -68,11 +85,19 @@ private:
 
 
     template<typename T, typename... Ts>
-    static void appendArgs(CProtoMsg& msg, T arg, Ts... args)
+    static void appendArgs(CProtoMsg& msg, const T& arg, Ts... args)
     {
         msg.body["args"].append(arg);
         appendArgs(msg, args...);
     }
+
+    template<typename T, typename... Ts>
+    static void appendArgs(CProtoMsg& msg, const std::pair<std::string, T>& arg, Ts... args)
+    {
+        msg.body[arg.first] = arg.second;
+        appendArgs(msg, args...);
+    }
+
     static void appendArgs(CProtoMsg& msg)
     {
         // break callstack

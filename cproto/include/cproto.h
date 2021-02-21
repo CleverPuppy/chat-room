@@ -13,11 +13,6 @@ constexpr uint16_t CPROTO_SERVER = 0;
 constexpr uint32_t CPROTO_MAX_SIZE = 10 * 1024 * 1024;
 constexpr uint32_t CPROTO_HEAD_SIZE = 8;
 
-enum class ResponseStatus : uint8_t
-{
-    SUCCESS = 200,
-    INTERNAL_ERROR = 110,
-};
 
 struct CProtoHead
 {

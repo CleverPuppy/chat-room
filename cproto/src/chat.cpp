@@ -2,7 +2,7 @@
 #include "cmds.h"
 
 ChatItem::ChatItem(const UserId& sender, const std::string& text) 
-    :sender(sender), text(text) ,timestamp(time(nullptr))
+    :sender(sender), text(text) ,timestamp(time(nullptr)), index(0)
 {
     
 }
@@ -26,6 +26,7 @@ Json::Value ChatItem::toJson()
     ret["timestamp"] = timestamp;
     ret["sender"] = sender;
     ret["text"] = text;
+    ret["index"] = index;
     return ret;
 }
 
