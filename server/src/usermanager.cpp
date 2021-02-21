@@ -75,3 +75,41 @@ UserToken UserManager::generateUserToken(UserId ID)
     tokenMap[newToken] = ID;
     return newToken;
 }
+
+UserId UserManager::getUserIdFromToken(const UserToken& token) const
+{
+    if(tokenMap.count(token) == 0)
+    {
+        return 0;
+    }
+    return tokenMap.at(token);
+}
+
+
+bool UserManager::verify(const UserToken& token) const
+{
+    return bool(tokenMap.count(token) == 1);
+}
+
+bool UserManager::verify(const UserId& id) const
+{
+    return bool(userIdMap.count(id) == 1);
+}
+
+PeoplePtr UserManager::getUser(const UserId& id) 
+{
+    return userIdMap.at(id);
+}
+UserId UserManager::verifyTokenAndGetUserId(const CProtoMsg& msg, int fd) 
+{
+    auto token = CProtoMsgManager::getToken(msg);
+    auto userId = getUserIdFromToken(token);
+    // invalid token
+    if(!userId)
+    {
+        std::string info = "Invalid Token";
+        auto msg = CProtoMsgManager::genInfoResponse(ResponseStatus::INTERNAL_ERROR, info);
+        CProtoMsgManager::encodeAndSendMsg(msg, fd);
+    }
+    return userId;
+}

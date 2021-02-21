@@ -4,6 +4,7 @@
 #include "cproto.h"
 #include "cprotomsg.h"
 #include "usermanager.h"
+#include "roommanager.h"
 #include "people.h"
 #include <list>
 #include <unordered_map>
@@ -25,4 +26,10 @@ private:
     
     CProtoMsgManager msgManager;
     UserManager userManager;
+    RoomManager roomManager;
+
+    void loginHandler(const MsgPtType& msgPt, int fd);
+    void roomHandle(const MsgPtType& msgPt, int fd);
+    void chatHandler(const MsgPtType& msgPt, int fd);
+
 };

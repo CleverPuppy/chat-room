@@ -8,6 +8,8 @@
 #include "server.h"
 #include "netutils.h"
 #include "login.h"
+#include "cmds.h"
+#include "chat.h"
 #include <iostream>
 
 constexpr const char* SERVER_ADDRESS = "127.0.0.1";
@@ -21,7 +23,6 @@ Server::Server()
         NetUtils::make_socket_unblock(listen_sock);
         NetUtils::bind_and_listen(listen_sock, SERVER_ADDRESS, PORT);
     }
-
     epollfd = epoll_create1(0);
     if (epollfd == -1)
     {
@@ -79,10 +80,6 @@ void Server::run()
                 #endif
             }else
             {
-                /*
-                 *                 TODO Read data
-                 *                  do_use_fd(events[n].data.fd)
-                */
                 int incommingFd = events[n].data.fd;
                 #ifndef NDEBUG
                 printf("Reading from %d\n", incommingFd);
@@ -91,35 +88,151 @@ void Server::run()
                 while (auto msgPt = msgManager.getMsg(incommingFd))
                 {
                     std::cout << msgPt->body << std::endl;
-                    if(msgPt->body["cmd"] == LOGIN_CMD || msgPt->body["cmd"] == REGISTER_CMD)
-                    {
-                        auto args = msgPt->body["args"];
-                        if(args.isArray())
-                        {
-                            if(args.size() != 2)
-                            {
-                                fprintf(stderr, "wrong args size\n");
-                                break;
-                            }
-                            std::string username = args[0].asString();
-                            std::string password = args[1].asString();
-                            #ifndef NDEBUG
-                            fprintf(stdout, "username : %s, password: %s\n", username.c_str(), password.c_str());
-                            #endif
-                            if(msgPt->body["cmd"] == LOGIN_CMD)
-                            {
-                                userManager.loginUser(incommingFd, username, password);
-                            }
-                            if(msgPt->body["cmd"] == REGISTER_CMD)
-                            {
-                                userManager.registerAndLoginUser(incommingFd, username, password);
-                            }
-                        }else
-                        {
-                            fprintf(stderr, "invalid request\n");
-                        }
-                    }
+                    loginHandler(msgPt, incommingFd);
+                    roomHandle(msgPt, incommingFd);
+                    chatHandler(msgPt, incommingFd);
                 }
+            }
+        }
+    }
+}
+
+void Server::loginHandler(const MsgPtType& msgPt, int fd) 
+{
+    if(msgPt->body["cmd"] == LOGIN_CMD || msgPt->body["cmd"] == REGISTER_CMD)
+    {
+        auto args = msgPt->body["args"];
+        if(args.isArray())
+        {
+            if(args.size() != 2)
+            {
+                fprintf(stderr, "wrong args size\n");
+                return;
+            }
+            std::string username = args[0].asString();
+            std::string password = args[1].asString();
+            #ifndef NDEBUG
+            fprintf(stdout, "username : %s, password: %s\n", username.c_str(), password.c_str());
+            #endif
+            if(msgPt->body["cmd"] == LOGIN_CMD)
+            {
+                userManager.loginUser(fd, username, password);
+            }
+            if(msgPt->body["cmd"] == REGISTER_CMD)
+            {
+                userManager.registerAndLoginUser(fd, username, password);
+            }
+        }else
+        {
+            fprintf(stderr, "invalid request\n");
+        }
+    }
+}
+
+void Server::roomHandle(const MsgPtType& msgPt, int fd) 
+{
+    auto& msgBody = msgPt->body;
+    auto cmd_name = msgBody["cmd"];
+    if(cmd_name == CMD_ROOM_CREATE)
+    {
+        const auto& roomName = msgBody["args"][0].asString();
+        const auto& creatorId = userManager.getUserIdFromToken(msgManager.getToken(*msgPt));
+        std::string info;
+        ResponseStatus status = ResponseStatus::INTERNAL_ERROR;
+        if(creatorId)
+        {
+            auto roomId = roomManager.addRoom(roomName, creatorId);
+            if(roomId){
+                status = ResponseStatus::SUCCESS;
+                info = std::to_string(roomId);
+            }
+        }
+        auto msg = msgManager.genInfoResponse(status, info);
+        msgManager.encodeAndSendMsg(msg, fd);
+        return;
+    }
+    if(cmd_name == CMD_ROOM_JOIN)
+    {
+        auto userId = userManager.verifyTokenAndGetUserId(*msgPt, fd);
+        if(userId)
+        {
+            RoomIDType roomId = 0;
+            try
+            {
+                roomId = msgPt->body["args"].get(0U, 0U ).asUInt();
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+            
+            if(roomManager.verifyRoomExist(roomId, fd) && roomManager.verifyRoomOpen(roomId, fd))
+            {
+                roomManager.joinRoom(roomId, userId);
+                auto userPt = userManager.getUser(userId);
+                userPt->joinRoom(roomId);
+            }
+        }
+        return;
+    }
+    if(cmd_name == CMD_ROOM_LIST)
+    {
+        auto userId = userManager.verifyTokenAndGetUserId(*msgPt, fd);
+        if(userId)
+        {
+            auto userPt = userManager.getUser(userId);
+            auto msg = roomManager.genRoomListResponse(userPt->rooms);
+            CProtoMsgManager::encodeAndSendMsg(msg, fd);
+        }
+        return;
+    }
+    if(cmd_name == CMD_ROOM_LOCK || cmd_name == CMD_ROOM_UNLOCK)
+    {
+        auto userId = userManager.verifyTokenAndGetUserId(*msgPt, fd);
+        RoomIDType roomId = msgPt->body["args"].get(0U, 0 ).asUInt();
+        if(userId && 
+            roomManager.verifyRoomExist(roomId, fd) && 
+            roomManager.verifyUserIsManager(roomId, userId, fd))
+        {
+            if(cmd_name == CMD_ROOM_LOCK)
+                roomManager.getRoomPt(roomId)->lock();
+            else
+                roomManager.getRoomPt(roomId)->unlock();
+
+            auto msg = CProtoMsgManager::genInfoResponse(ResponseStatus::SUCCESS, 
+                        std::to_string(roomId) + ((cmd_name == CMD_ROOM_LOCK)?":roomlocked":":roomunlocked"));
+            CProtoMsgManager::encodeAndSendMsg(msg, fd);
+        }
+        return;
+    }
+}
+
+void Server::chatHandler(const MsgPtType& msgPt, int fd) 
+{
+    auto& msgBody = msgPt->body;
+    auto cmd_name = msgBody["cmd"];
+    if(cmd_name != CMD_CHAT_SEND && cmd_name != CMD_CHAT_GET)
+    {
+        return;
+    }
+    auto userid = userManager.verifyTokenAndGetUserId(*msgPt, fd);
+    if(userid)
+    {
+        RoomIDType roomid = msgPt->body["args"][0].asUInt();
+        if(roomManager.verifyUserInRoom(roomid, userid, fd))
+        {
+            if(cmd_name == CMD_CHAT_SEND)
+            {
+                std::string text = msgPt->body["args"][1].asString();
+                ChatItem item{userid, text};
+                auto roomPt = roomManager.getRoomPt(roomid);
+                roomPt->addChatItem(item);
+                return;
+            }
+            if(cmd_name == CMD_CHAT_GET)
+            {
+                //TODO 
+                return;
             }
         }
     }

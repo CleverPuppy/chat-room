@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <list>
+#include <set>
 #include "room.h"
 #include "cproto.h"
 
@@ -40,4 +40,7 @@ public:
     const UserPassword& getUserPassword() {return profile.password;}
 
     void updateToken(const UserToken& token){ profile.token = token;}
+    void joinRoom(RoomIDType roomId);
+
+    std::set<RoomIDType> rooms;
 };
