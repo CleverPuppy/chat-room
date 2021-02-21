@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <cstring>
 #include <cassert>
+#include <thread>
 #include "unistd.h"
 #include "sys/time.h"
 #include "sys/types.h"
@@ -266,6 +267,7 @@ void Client::waitingForCmdHint()
 void Client::waitingForCmd() 
 {
     waitingForCmdHint();
+    chatClient.runBackground(this);
     while (status == ClientStatus::WAITING_FOR_CMD)
     {
         std::string line;
@@ -287,15 +289,18 @@ void Client::waitingForCmd()
                     msgManager.encodeAndSendMsg(msg, fd);
                 }else if(cmds.front() == CMD_ROOM_JOIN)
                 {
-                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_JOIN, token, cmds[1]);
+                    RoomIDType roomId = std::stoi(cmds[1]);
+                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_JOIN, token, roomId);
                     msgManager.encodeAndSendMsg(msg, fd);
                 }else if(cmds.front() == CMD_ROOM_UNLOCK)
                 {
-                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_UNLOCK, token, cmds[1]);
+                    RoomIDType roomId = std::stoi(cmds[1]);
+                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_UNLOCK, token, roomId);
                     msgManager.encodeAndSendMsg(msg, fd);
                 }else if(cmds.front() == CMD_ROOM_LOCK)
                 {
-                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_LOCK, token, cmds[1]);
+                    RoomIDType roomId = std::stoi(cmds[1]);
+                    auto msg = CProtoMsgManager::genTokenCmdRequest(CMD_ROOM_LOCK, token, roomId);
                     msgManager.encodeAndSendMsg(msg, fd);
                 }else if(cmds.front() == CMD_CHAT_SEND)
                 {

@@ -1,14 +1,15 @@
 #pragma once
 #ifndef __CLIENT_H__
 #define __CLIENT_H__
-#include "people.h"
 #include "status.h"
 #include "login.h"
+#include "chatclient.h"
 
 constexpr int MAX_RETRY_TIMES = 3;
 
 class Client
 {
+    friend class ChatClient;
 public:
     Client();
     Client(const Client&) = delete;
@@ -21,6 +22,7 @@ private:
     int fd;
     int retryTimes = 0;
     CProtoMsgManager msgManager;
+    ChatClient chatClient;
     UserToken token;
 
     void connectToServer();
