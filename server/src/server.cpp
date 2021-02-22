@@ -138,13 +138,19 @@ void Server::roomHandle(const MsgPtType& msgPt, int fd)
         const auto& roomName = msgBody["args"][0].asString();
         const auto& creatorId = userManager.getUserIdFromToken(msgManager.getToken(*msgPt));
         std::string info;
-        ResponseStatus status = ResponseStatus::INTERNAL_ERROR;
+        ResponseStatus status = ResponseStatus::ROOM_CREATE_FAILED;
         if(creatorId)
         {
             auto roomId = roomManager.addRoom(roomName, creatorId);
             if(roomId){
-                status = ResponseStatus::SUCCESS;
-                info = std::to_string(roomId);
+                userManager.getUser(creatorId)->joinRoom(roomId);
+                status = ResponseStatus::ROOM_CREATE_SUCCESS;
+                assert(roomManager.getRoomPt(roomId) != nullptr);
+                auto roominfo = roomManager.getRoomPt(roomId)->genJsonInfo();
+                assert(roominfo != Json::nullValue);
+                auto msg = CProtoMsgManager::genInfoResponse(status, roominfo);
+                msgManager.encodeAndSendMsg(msg, fd);
+                return;
             }
         }
         auto msg = msgManager.genInfoResponse(status, info);
@@ -231,7 +237,10 @@ void Server::chatHandler(const MsgPtType& msgPt, int fd)
             }
             if(cmd_name == CMD_CHAT_GET)
             {
-                //TODO 
+                auto roomPt = roomManager.getRoomPt(roomid);
+                time_t timestamp = msgPt->body["args"][1].asUInt();
+                uint index = msgPt->body["args"][2].asUInt();
+                roomPt->sendUnread(timestamp, index, fd);
                 return;
             }
         }

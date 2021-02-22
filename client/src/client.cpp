@@ -88,10 +88,10 @@ void Client::waitingForLogin()
                 }
 
                 fd_set rfds;
-                timeval tv{5, 0};
+                timeval timeout{5, 0};
                 FD_ZERO(&rfds);
                 FD_SET(fd, &rfds);
-                int select_ret = select(fd + 1, &rfds, NULL, NULL, &tv);
+                int select_ret = select(fd + 1, &rfds, NULL, NULL, &timeout);
                 if(select_ret == -1)
                 {
                     fprintf(stderr, "select() error\n");

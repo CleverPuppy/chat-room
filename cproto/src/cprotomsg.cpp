@@ -76,7 +76,7 @@ int CProtoMsgManager::encodeAndSendMsg(CProtoMsg& msg, int fd)
     {
         fprintf(stderr, "send ERROR :%s\n", strerror(errno));
     };
-    std::cout << "sendMsg : " << msg.body << std::endl;
+    // std::cout << "sendMsg : " << msg.body << std::endl;
     return ret;
 }
 

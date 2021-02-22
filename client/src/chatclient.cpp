@@ -1,6 +1,7 @@
 #include "chatclient.h"
 #include "client.h"
 #include <future>
+#include <algorithm>
 
 void ChatClient::requestRooms(Client* clientPt) 
 {
@@ -30,19 +31,17 @@ void ChatClient::requestChatInfos(Client* clientPt)
 
 void ChatClient::runBackground(Client* clientPt) 
 {
-    uint interval_sec = 2;
+    uint interval_sec = 1;
     uint interval_msec = 0;
     mBackGround = std::async(&ChatClient::fetchMsg, this, clientPt, interval_sec, interval_msec);
     std::cout << "select run background\n" << std::endl;
 }
 
-void ChatClient::fetchMsg(Client* clientPt, uint seconds, uint minsec) 
+void ChatClient::fetchMsg(Client* clientPt, uint sec, uint usec) 
 {
     int clientFd = clientPt->fd;
-
+    timeval timeout{sec, usec};
     int nfds = clientFd + 1;
-    timeval tv {seconds,minsec};
-    fd_set readfds;
     int retVal;
     Json::CharReaderBuilder reader;
     Json::Value root;
@@ -53,10 +52,12 @@ void ChatClient::fetchMsg(Client* clientPt, uint seconds, uint minsec)
     {
         // request for chats
         requestChatInfos(clientPt);
-
+        timeout.tv_sec = sec;
+        timeout.tv_usec = usec;
+        fd_set readfds;
         FD_ZERO(&readfds);
         FD_SET(clientFd, &readfds);
-        retVal = select(nfds, &readfds, nullptr, nullptr, &tv);
+        retVal = select(nfds, &readfds, nullptr, nullptr, &timeout);
         switch (retVal)
         {
         case -1:
@@ -69,6 +70,7 @@ void ChatClient::fetchMsg(Client* clientPt, uint seconds, uint minsec)
                 std::cout << msgPt->body << std::endl;
                 ResponseStatus status = CProtoMsgManager::getMsgStatus(*msgPt);
                 auto& info = msgPt->body["info"];
+                RoomIDType roomid;
                 switch (status)
                 {
                 case ResponseStatus::INTERNAL_ERROR:
@@ -79,7 +81,14 @@ void ChatClient::fetchMsg(Client* clientPt, uint seconds, uint minsec)
                     addRoom(info);
                     break;
                 case ResponseStatus::CHAT_LIST:
-                    
+                    roomid = msgPt->body["roomid"].asUInt();
+                    if(getRoom(roomid))
+                    {
+                        getRoom(roomid)->addChatList(info);
+                    }else
+                    {
+                        fprintf(stderr, "wrong roomid\n");
+                    }
                     break;
                 case ResponseStatus::ROOM_LIST:
                     for(Json::ArrayIndex i = 0; i < info.size(); ++i)
@@ -91,6 +100,8 @@ void ChatClient::fetchMsg(Client* clientPt, uint seconds, uint minsec)
                     break;
                 }
             }
+            break;
+        case 0:
             break;
         default:
             break;
@@ -118,4 +129,20 @@ void ChatClient::addRoom(const Json::Value& info)
     {
         addRoom(roomid, room_name);
     }
+}
+
+std::shared_ptr<RoomClient> ChatClient::getRoom(const RoomIDType& id) 
+{
+    return roomMap[id];
+}
+
+void RoomClient::addChatList(const Json::Value& json_lists) 
+{
+    std::list<ChatItem> chats;
+    for(Json::ArrayIndex i = 0; i < json_lists.size(); ++i)
+    {
+        chats.emplace_back(json_lists[i]);
+    }
+    chatHistory.merge(chats);
+    printf("Msgs in room [%u][%lu]s\n", ID, chatHistory.size());
 }

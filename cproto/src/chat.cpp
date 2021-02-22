@@ -15,6 +15,12 @@ ChatItem::ChatItem(const Json::Value& jsonChatItem)
 
 }
 
+ChatItem::ChatItem(const ChatItem& c) 
+    :sender(c.sender), text(c.text), timestamp(c.timestamp), index(c.index)
+{
+
+}
+
 std::ostream& operator<<(std::ostream& os, const ChatItem& chatItem) 
 {
     os << chatItem.sender << " : " << chatItem.text;
@@ -30,3 +36,9 @@ Json::Value ChatItem::toJson()
     return ret;
 }
 
+
+bool operator<(const ChatItem& lhs, const ChatItem& rhs) 
+{
+    return (lhs.timestamp < rhs.timestamp || lhs.timestamp == rhs.timestamp && lhs.index < rhs.index);
+
+}

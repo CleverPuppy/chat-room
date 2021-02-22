@@ -11,6 +11,7 @@ class ChatItem
 {
 public:
     ChatItem(const UserId& sender, const std::string& text);
+    ChatItem(const ChatItem& c);
     ChatItem(const Json::Value& jsonChatItem);
     Json::Value toJson();
 
@@ -18,4 +19,6 @@ public:
     uint32_t index;     // same timestamp index
     UserId sender;
     std::string text;
+
 };
+bool operator<(const ChatItem& lhs, const ChatItem& rhs);
