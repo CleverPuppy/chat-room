@@ -3,14 +3,15 @@
 #include "cproto.h"
 #include "types.h"
 
-enum class ResponseStatus : uint8_t
+enum class ResponseStatus : uint32_t
 {
     SUCCESS,
     INTERNAL_ERROR,
     
     CHAT_LIST,
     ROOM_LIST,
-    ROOM_ID,
+    ROOM_CREATE_SUCCESS,
+    ROOM_CREATE_FAILED,
     TOKEN,
     TOKEN_FAILED
 };
@@ -26,7 +27,8 @@ public:
     static CProtoMsg genChatMsg(const UserToken& token,
                                 const RoomIDType& roomID,
                                 const std::string& info);
-    static CProtoMsg genInfoResponse(ResponseStatus status, const std::string& info)
+    template<typename T>
+    static CProtoMsg genInfoResponse(ResponseStatus status, const T& info)
     {
         CProtoMsg msg;
         setDefaultHead(msg, CPROTO_RESPONSE_MAGIC);
@@ -62,6 +64,13 @@ public:
             return true;
         }
         return false;
+    }
+    static ResponseStatus getMsgStatus(const CProtoMsg& msg)
+    {
+        ResponseStatus ret = ResponseStatus::INTERNAL_ERROR;
+        uint32_t status_uint = msg.body.get("status", uint32_t(ResponseStatus::INTERNAL_ERROR)).asUInt();
+        ret = static_cast<ResponseStatus>(status_uint);
+        return ret;
     }
     static UserToken getToken(const CProtoMsg& msg)
     {

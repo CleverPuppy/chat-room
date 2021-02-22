@@ -73,12 +73,12 @@ bool RoomManager::verifyRoomOpen(const RoomIDType& roomid, int fd)
 
 CProtoMsg RoomManager::genRoomListResponse(const std::set<RoomIDType>& rooms)
 {
-    auto msg = CProtoMsgManager::genInfoResponse(ResponseStatus::ROOM_LIST, "");
+    auto msg = CProtoMsgManager::genInfoResponse(ResponseStatus::ROOM_LIST, Json::Value{});
     for(auto roomid : rooms)
     {
         auto roomPt = getRoomPt(roomid);
         auto roomInfo = roomPt->genJsonInfo();
-        msg.body["roomlist"].append(roomInfo);
+        msg.body["info"].append(roomInfo);
     }
     return msg;
 }

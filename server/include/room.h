@@ -100,10 +100,10 @@ public:
     Json::Value genJsonInfo()
     {
         Json::Value ret;
-        ret['id'] = ID;
-        ret['name'] = name;
-        ret['status'] = int(status);
-        ret['creator'] = creator;
+        ret["id"] = ID;
+        ret["name"] = name;
+        ret["status"] = int(status);
+        ret["creator"] = creator;
         return ret;
     }
 
