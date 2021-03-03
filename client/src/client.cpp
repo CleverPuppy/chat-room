@@ -92,12 +92,14 @@ void Client::waitingForLogin()
                 FD_ZERO(&rfds);
                 FD_SET(fd, &rfds);
                 int select_ret = select(fd + 1, &rfds, NULL, NULL, &timeout);
+                std::vector<int> closedFds;
                 if(select_ret == -1)
                 {
                     fprintf(stderr, "select() error\n");
-                }else if(select_ret)
+                }
+                else if(select_ret)
                 {
-                    msgManager.readData(fd);
+                    msgManager.readData(fd, closedFds);
                     if(auto msgPt = msgManager.getMsg(fd))
                     {
                         std::cout << msgPt->body << std::endl;
@@ -114,7 +116,14 @@ void Client::waitingForLogin()
                 }else{
                     fprintf(stderr, "timeout\n");
                 }
-
+                if(!closedFds.empty())
+                {
+                    for(int fd: closedFds)
+                    {
+                        msgManager.releaseConnection(fd);
+                    }
+                    status = ClientStatus::FAILED_CONNECT_TO_SERVER;
+                }
             }else break;
         }
     }

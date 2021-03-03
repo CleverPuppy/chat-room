@@ -58,13 +58,14 @@ void ChatClient::fetchMsg(Client* clientPt, uint sec, uint usec)
         FD_ZERO(&readfds);
         FD_SET(clientFd, &readfds);
         retVal = select(nfds, &readfds, nullptr, nullptr, &timeout);
+        std::vector<int> closedFds;
         switch (retVal)
         {
         case -1:
             fprintf(stderr, "select error\n");
             break;
         case 1:
-            clientPt->msgManager.readData(clientFd);
+            clientPt->msgManager.readData(clientFd, closedFds);
             while (auto msgPt = clientPt->msgManager.getMsg(clientFd))
             {
                 std::cout << msgPt->body << std::endl;
@@ -105,6 +106,14 @@ void ChatClient::fetchMsg(Client* clientPt, uint sec, uint usec)
             break;
         default:
             break;
+        }
+        if(!closedFds.empty())
+        {
+            for(int fd: closedFds)
+            {
+                clientPt->msgManager.releaseConnection(fd);
+            }
+            clientPt->status = ClientStatus::FAILED_CONNECT_TO_SERVER;
         }
     }
 }

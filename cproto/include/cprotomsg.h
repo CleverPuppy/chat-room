@@ -81,6 +81,7 @@ public:
     void establishNewConnection(int fd);
     void releaseConnection(int fd);
     void readData(int fd);
+    void readData(int fd, std::vector<int>& closed);
     std::shared_ptr<CProtoMsg> getMsg(int fd);
 private:
     std::unordered_map<int, DecoderPtr> fdMap;

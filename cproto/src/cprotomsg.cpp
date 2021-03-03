@@ -50,6 +50,32 @@ void CProtoMsgManager::readData(int fd)
     }
 }
 
+void CProtoMsgManager::readData(int fd, std::vector<int>& closed) 
+{
+    auto decoder = fdMap[fd];
+    if(decoder == nullptr)
+    {
+        fprintf(stderr,"fd %d don't have valid decoder\n", fd);
+        return;
+    }
+    printf("fd form %d",fd);
+    char buffer[2048];
+    int read_num = 0;
+    bool shouldClose = true;
+    while (( read_num = read(fd, buffer, sizeof(buffer))) > 0)
+    {
+        shouldClose = false;
+        decoder->parser(buffer, read_num);
+    }
+    if(shouldClose){
+        closed.push_back(fd);
+    }
+    if(read_num == -1 && errno != EAGAIN)
+    {
+        perror("read error\n");
+    }
+}
+
 std::shared_ptr<CProtoMsg> CProtoMsgManager::getMsg(int fd) 
 {
     auto decoder = fdMap[fd];
