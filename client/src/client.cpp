@@ -241,11 +241,15 @@ void Client::statusTransfrom()
             status = ClientStatus::EXIT;
         }else
         {
+            constexpr uint32_t waitingSec = 3;
+            printf("Waiting %d seconds...\n", waitingSec);
+            sleep(waitingSec);
             printf("Retry ...%d\n", retryTimes);
             connectToServer();
         }
         break;
     case ClientStatus::WAITING_FOR_LOGING:
+        retryTimes = 0;
         waitingForLogin();
         break;
     case ClientStatus::WAITING_FOR_CMD:
