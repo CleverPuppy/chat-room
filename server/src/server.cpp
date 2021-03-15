@@ -177,6 +177,10 @@ void Server::roomHandle(const MsgPtType& msgPt, int fd)
                 roomManager.joinRoom(roomId, userId);
                 auto userPt = userManager.getUser(userId);
                 userPt->joinRoom(roomId);
+                auto status = ResponseStatus::ROOM_JOIN_SUCCESS;
+                auto roominfo = roomManager.getRoomPt(roomId)->genJsonInfo();
+                auto msg = CProtoMsgManager::genInfoResponse(status, roominfo);
+                msgManager.encodeAndSendMsg(msg, fd);
             }
         }
         return;

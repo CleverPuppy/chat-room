@@ -12,6 +12,8 @@ enum class ResponseStatus : uint32_t
     ROOM_LIST,
     ROOM_CREATE_SUCCESS,
     ROOM_CREATE_FAILED,
+    ROOM_JOIN_SUCCESS,
+    ROOM_JOIN_FAILED,
     TOKEN,
     TOKEN_FAILED
 };

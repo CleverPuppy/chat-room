@@ -81,6 +81,14 @@ void ChatClient::fetchMsg(Client* clientPt, uint sec, uint usec)
                         addRoomAndChRoom(info, clientPt);
                     }
                     break;
+                case ResponseStatus::ROOM_JOIN_SUCCESS:
+                    fprintf(stdout, "Room joined\n");
+                    if(clientPt->isRoomSelected()){
+                        addRoom(info);
+                    }else{
+                        addRoomAndChRoom(info, clientPt);
+                    }
+                    break;
                 case ResponseStatus::CHAT_LIST:
                     roomid = msgPt->body["roomid"].asUInt();
                     if(getRoom(roomid))
