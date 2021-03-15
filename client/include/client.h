@@ -24,16 +24,24 @@ private:
     CProtoMsgManager msgManager;
     ChatClient chatClient;
     UserToken token;
-
+    std::shared_ptr<RoomClient> currentRoomClient;
     void connectToServer();
     void waitingForLogin();
     void waitingForLoginHint();
     void waitingForCmd();
     void waitingForCmdHint();
+    void roomCmdHint();
     void statusTransfrom();
 
     bool isCmdValid(const std::vector<std::string>& cmds);
     void wrongCmdSizeHint(const std::string& cmd, int real, int target);
     void wrongCmdNameHint(const std::string& cmd);
+    void wrongRoomNotSelectedHint();
+    void roomChangedHint();
+
+    bool isUserTokenValid();
+    bool isRoomSelected();
+    
+    void chRoom(std::shared_ptr<RoomClient>& ptr);
 };
 #endif // __CLIENT_H__

@@ -230,7 +230,8 @@ void Server::chatHandler(const MsgPtType& msgPt, int fd)
             if(cmd_name == CMD_CHAT_SEND)
             {
                 std::string text = msgPt->body["args"][1].asString();
-                ChatItem item{userid, text};
+                const auto& username = userManager.getUser(userid)->getUserName();
+                ChatItem item{userid, username, text};
                 auto roomPt = roomManager.getRoomPt(roomid);
                 roomPt->addChatItem(item);
                 return;

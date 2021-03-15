@@ -36,7 +36,7 @@ public:
         managers.insert(creator);
         menbers.insert(creator);
         // dummy head
-        mChats.emplace_back(0, "dummy text");
+        mChats.emplace_back(0, "", "dummy text");
     }
     ~Room() = default;
 

@@ -64,6 +64,11 @@ void Client::waitingForLogin()
 {
     while (status == ClientStatus::WAITING_FOR_LOGING)
     {
+        if(isUserTokenValid()){
+            printf("Using UserToken\n");
+            status = ClientStatus::WAITING_FOR_CMD;
+            break;
+        }
         waitingForLoginHint();
         std::string line;
         std::vector<std::string> cmds;
@@ -139,7 +144,7 @@ void Client::waitingForLoginHint()
 
 bool Client::isCmdValid(const std::vector<std::string>& cmds) 
 {
-    assert(!cmds.empty());
+    if(cmds.empty()) return false;
     switch (status)
     {
     case ClientStatus::WAITING_FOR_LOGING:
@@ -155,28 +160,12 @@ bool Client::isCmdValid(const std::vector<std::string>& cmds)
         }
         break;
     case ClientStatus::WAITING_FOR_CMD:
-        if(cmds.front() == CMD_ROOM_CREATE)
-        {
-            if(cmds.size() != 2)
-            {
-                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 2 - 1);
-                return false;
-            }
-        }else if(cmds.front() == CMD_ROOM_JOIN)
-        {
-            if(cmds.size() != 2)
-            {
-                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 2 - 1);
-                return false;
-            }
-        }else if(cmds.front() == CMD_ROOM_LOCK)
-        {
-            if(cmds.size() != 2)
-            {
-                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 2 - 1);
-                return false;
-            }
-        }else if(cmds.front() == CMD_ROOM_UNLOCK)
+        if(cmds.front() == CMD_ROOM_LOCK   ||
+                 cmds.front() == CMD_ROOM_UNLOCK ||
+                 cmds.front() == CMD_ROOM_JOIN   ||
+                 cmds.front() == CMD_ROOM_CREATE ||
+                 cmds.front() == CMD_ROOM_CHANGE
+            )
         {
             if(cmds.size() != 2)
             {
@@ -185,12 +174,18 @@ bool Client::isCmdValid(const std::vector<std::string>& cmds)
             }
         }else if(cmds.front() == CMD_CHAT_SEND)
         {
-            if(cmds.size() != 3)
+            if(!isRoomSelected())
             {
-                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 3 - 1);
+                wrongRoomNotSelectedHint();
                 return false;
             }
-        }else if(cmds.front() == CMD_QUIT)
+            if(cmds.size() != 2)
+            {
+                wrongCmdSizeHint(cmds.front(), cmds.size() - 1, 2 - 1);
+                return false;
+            }
+        }else if(cmds.front() == CMD_QUIT ||
+                 cmds.front() == CMD_ROOM_LIST)
         {
             if(cmds.size() != 1)
             {
@@ -270,10 +265,12 @@ void Client::waitingForCmdHint()
             "Cmds:\n"
             "Create Room:   \t\t createroom [roomname]\n"
             "Join Room:     \t\t joinroom [roomid]\n"
-            "LockRoom:      \t\t lockroom [roomid]\n"
-            "UnlockRoom:    \t\t unlockroom [roomid]\n"
-            "SendMessage:   \t\t send [roomid] [info]\n"
+            "Lock Room:      \t\t lockroom [roomid]\n"
+            "Unlock Room:    \t\t unlockroom [roomid]\n"
+            "Change Room:    \t\t chroom [roomid]\n"
+            "List Rooms:    \t\t lsroom\n"
             "Quit:          \t\t quit\n");
+    roomCmdHint();
     fflush(stdout);
 }
 
@@ -317,9 +314,25 @@ void Client::waitingForCmd()
                     msgManager.encodeAndSendMsg(msg, fd);
                 }else if(cmds.front() == CMD_CHAT_SEND)
                 {
+                    if(isRoomSelected()){
+                        RoomIDType roomId = currentRoomClient->ID;
+                        auto msg = CProtoMsgManager::genChatMsg(token, roomId, cmds[1]);
+                        msgManager.encodeAndSendMsg(msg, fd);
+                    }else{
+                        wrongRoomNotSelectedHint();
+                    }
+                }else if(cmds.front() == CMD_ROOM_LIST)
+                {
+                    chatClient.printRooms(std::cout);
+                }else if(cmds.front() == CMD_ROOM_CHANGE)
+                {
                     RoomIDType roomId = std::stoi(cmds[1]);
-                    auto msg = CProtoMsgManager::genChatMsg(token, roomId, cmds[2]);
-                    msgManager.encodeAndSendMsg(msg, fd);
+                    auto roomPtr = chatClient.getRoom(roomId);
+                    if(roomPtr){
+                        chRoom(roomPtr);
+                    }else{
+                        fprintf(stderr, "Wrong roomid, please join room[%d] first\n", roomId);
+                    }
                 }else if(cmds.front() == CMD_QUIT)
                 {
                     status = ClientStatus::EXIT;
@@ -329,5 +342,45 @@ void Client::waitingForCmd()
             }
         }
     }
-    
+}
+
+inline bool Client::isUserTokenValid() 
+{
+    return !token.empty();
+}
+
+inline bool Client::isRoomSelected() 
+{
+    return currentRoomClient != nullptr;
+}
+
+void Client::roomCmdHint() 
+{
+    if(isRoomSelected()){
+        fprintf(stdout,
+                "Cmds for room %s[%d]"
+                "SendMessage：  \t\t send [info]\n"
+                "change Room:   \t\t chroom [roomid]\n", 
+                currentRoomClient->name.c_str(), currentRoomClient->ID);
+    }
+}
+
+void Client::wrongRoomNotSelectedHint() 
+{
+    fprintf(stderr, "Room Not Selected, use cmd : chroom [roomid]\n");
+}
+
+
+void Client::chRoom(std::shared_ptr<RoomClient>& ptr) 
+{
+    if(ptr){
+        currentRoomClient = ptr;
+        roomChangedHint();
+    }
+}
+
+void Client::roomChangedHint() 
+{   
+    fprintf(stdout, "Current in Room %s[%d]\n", currentRoomClient->name.c_str(),
+                                            currentRoomClient->ID);
 }

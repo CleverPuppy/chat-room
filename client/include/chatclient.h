@@ -20,7 +20,12 @@ public:
     RoomIDType ID;
     RoomNameType name;
     std::list<ChatItem> chatHistory;
+
+private:
+    std::list<ChatItem>::iterator lastRead;
 };
+
+std::ostream& operator<<(std::ostream& os, RoomClient& client);
 
 class ChatClient
 {
@@ -32,8 +37,11 @@ public:
     ChatClient() = default;
     
     void requestRooms(Client* clientPt);
-    void requestChatInfos(Client* clientPt);
+    void requestChatInfos(Client* clientPt);            // 轮询所有Room
+    void requestCurrentRoomChatInfo(Client* clientPt);  // 询问当前Room
     void runBackground(Client* clientPt);
+    void printRooms(std::ostream& os);
+    std::shared_ptr<RoomClient> getRoom(const RoomIDType& id);
 private:
     std::map<RoomIDType, std::shared_ptr<RoomClient>> roomMap;
     void fetchMsg(Client* clientPt, uint sec, uint usec);
@@ -41,7 +49,9 @@ private:
 
     void addRoom(const RoomIDType& id, const RoomNameType& name);
     void addRoom(const Json::Value& info);
-    std::shared_ptr<RoomClient> getRoom(const RoomIDType& id);
+    void addRoomAndChRoom(const Json::Value& info, Client* clientPt);
+
+    void requestRoomChatInfo(Client* clientPt, std::shared_ptr<RoomClient>& roomClientPtr);
 };
 
 std::ostream& operator<<(std::ostream& os, const ChatItem& chatItem);

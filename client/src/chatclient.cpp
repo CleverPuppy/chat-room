@@ -13,19 +13,14 @@ void ChatClient::requestChatInfos(Client* clientPt)
 {
     for(auto& room : roomMap)
     {
-        auto& roomid = room.first;
-        time_t lastTime = 0;
-        uint32_t index = 0;
+        requestRoomChatInfo(clientPt, room.second);
+    }
+}
 
-        if(!room.second->chatHistory.empty())
-        {
-            const auto& chatitem = room.second->chatHistory.back();
-            lastTime = chatitem.timestamp;
-            index = chatitem.index;
-        }
-        
-        auto requestMsg = clientPt->msgManager.genTokenCmdRequest(CMD_CHAT_GET, clientPt->token, roomid, lastTime, index);
-        clientPt->msgManager.encodeAndSendMsg(requestMsg, clientPt->fd);
+void ChatClient::requestCurrentRoomChatInfo(Client* clientPt) 
+{
+    if(clientPt->isRoomSelected()){
+        requestRoomChatInfo(clientPt, clientPt->currentRoomClient);
     }
 }
 
@@ -51,7 +46,8 @@ void ChatClient::fetchMsg(Client* clientPt, uint sec, uint usec)
     while (clientPt->status == ClientStatus::WAITING_FOR_CMD)
     {
         // request for chats
-        requestChatInfos(clientPt);
+        // requestChatInfos(clientPt);
+        requestCurrentRoomChatInfo(clientPt);
         timeout.tv_sec = sec;
         timeout.tv_usec = usec;
         fd_set readfds;
@@ -79,7 +75,11 @@ void ChatClient::fetchMsg(Client* clientPt, uint sec, uint usec)
                     break;
                 case ResponseStatus::ROOM_CREATE_SUCCESS:
                     fprintf(stdout, "Room created\n");
-                    addRoom(info);
+                    if(clientPt->isRoomSelected()){
+                        addRoom(info);
+                    }else{
+                        addRoomAndChRoom(info, clientPt);
+                    }
                     break;
                 case ResponseStatus::CHAT_LIST:
                     roomid = msgPt->body["roomid"].asUInt();
@@ -92,9 +92,13 @@ void ChatClient::fetchMsg(Client* clientPt, uint sec, uint usec)
                     }
                     break;
                 case ResponseStatus::ROOM_LIST:
-                    for(Json::ArrayIndex i = 0; i < info.size(); ++i)
-                    {
-                        addRoom(info[i]);
+                    if(info.size() == 1){
+                        addRoomAndChRoom(info[0], clientPt);
+                    }else{
+                        for(Json::ArrayIndex i = 0; i < info.size(); ++i)
+                        {
+                            addRoom(info[i]);
+                        }
                     }
                     break;
                 default:
@@ -140,6 +144,18 @@ void ChatClient::addRoom(const Json::Value& info)
     }
 }
 
+void ChatClient::addRoomAndChRoom(const Json::Value& info, Client* clientPt) 
+{
+    RoomIDType roomid = info["id"].asUInt();
+    RoomNameType room_name = info["name"].asString();
+    if(roomid)
+    {
+        addRoom(roomid, room_name);
+    }
+    auto room = getRoom(roomid);
+    clientPt->chRoom(room);
+}
+
 std::shared_ptr<RoomClient> ChatClient::getRoom(const RoomIDType& id) 
 {
     return roomMap[id];
@@ -154,4 +170,40 @@ void RoomClient::addChatList(const Json::Value& json_lists)
     }
     chatHistory.merge(chats);
     printf("Msgs in room [%u][%lu]s\n", ID, chatHistory.size());
+}
+
+std::ostream& operator<<(std::ostream& os, RoomClient& client) 
+{
+    os << client.name << "-" << client.ID;
+    return os;
+}
+
+void ChatClient::printRooms(std::ostream& os) 
+{
+    os << "Rooms:"<<std::endl;
+    if(roomMap.empty()){
+        os << "None." << std::endl;
+    }
+    int index = 1;
+    for(const auto& p : roomMap)
+    {
+        os <<index++ << " " << *p.second << std::endl;
+    }
+}
+
+void ChatClient::requestRoomChatInfo(Client* clientPt, std::shared_ptr<RoomClient>& roomClientPtr) 
+{
+        auto& roomid = roomClientPtr->ID;
+        time_t lastTime = 0;
+        uint32_t index = 0;
+
+        if(!roomClientPtr->chatHistory.empty())
+        {
+            const auto& chatitem = roomClientPtr->chatHistory.back();
+            lastTime = chatitem.timestamp;
+            index = chatitem.index;
+        }
+        
+        auto requestMsg = clientPt->msgManager.genTokenCmdRequest(CMD_CHAT_GET, clientPt->token, roomid, lastTime, index);
+        clientPt->msgManager.encodeAndSendMsg(requestMsg, clientPt->fd);
 }
