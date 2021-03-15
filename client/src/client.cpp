@@ -290,6 +290,10 @@ void Client::waitingForCmd()
             while(ss >> tmp)
             {
                 cmds.push_back(tmp);
+                if(!cmds.empty() && cmds.front() == CMD_CHAT_SEND){
+                    cmds.push_back(ss.str().substr(5));
+                    break;
+                }
             }
             if(isCmdValid(cmds))
             {
