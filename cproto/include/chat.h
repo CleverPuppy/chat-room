@@ -23,3 +23,4 @@ public:
 
 };
 bool operator<(const ChatItem& lhs, const ChatItem& rhs);
+std::ostream& operator<<(std::ostream& os, const ChatItem& chatItem);

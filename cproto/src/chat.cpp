@@ -24,7 +24,9 @@ ChatItem::ChatItem(const ChatItem& c)
 
 std::ostream& operator<<(std::ostream& os, const ChatItem& chatItem) 
 {
-    os << chatItem.sender << " : " << chatItem.text;
+    if(chatItem.sender == 0) return os;
+    os << chatItem.sender_name << " : " << chatItem.text;
+    return os;
 }
 
 Json::Value ChatItem::toJson() 

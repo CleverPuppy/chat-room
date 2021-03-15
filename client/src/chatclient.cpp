@@ -176,8 +176,11 @@ void RoomClient::addChatList(const Json::Value& json_lists)
     {
         chats.emplace_back(json_lists[i]);
     }
+    for(const auto& chatitem : chats)
+    {
+        std::cout << chatitem << std::endl;
+    }
     chatHistory.merge(chats);
-    printf("Msgs in room [%u][%lu]s\n", ID, chatHistory.size());
 }
 
 std::ostream& operator<<(std::ostream& os, RoomClient& client) 

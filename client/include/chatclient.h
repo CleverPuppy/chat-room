@@ -52,6 +52,6 @@ private:
     void addRoomAndChRoom(const Json::Value& info, Client* clientPt);
 
     void requestRoomChatInfo(Client* clientPt, std::shared_ptr<RoomClient>& roomClientPtr);
-};
 
-std::ostream& operator<<(std::ostream& os, const ChatItem& chatItem);
+    UserId m_userid;    //TODO add user_id to support differentiate msg send from myself. server login module support must;
+};
