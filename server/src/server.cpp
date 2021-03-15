@@ -87,7 +87,7 @@ void Server::run()
                 msgManager.readData(incommingFd);
                 while (auto msgPt = msgManager.getMsg(incommingFd))
                 {
-                    std::cout << msgPt->body << std::endl;
+                    // std::cout << msgPt->body << std::endl;
                     loginHandler(msgPt, incommingFd);
                     roomHandle(msgPt, incommingFd);
                     chatHandler(msgPt, incommingFd);

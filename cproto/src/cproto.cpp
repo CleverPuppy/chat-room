@@ -100,10 +100,6 @@ bool CProtoDecoder::parser(void *data, size_t len)
 
         if(mCurParserStatus == CProtoParserStatus::ON_PARSER_BODY)
         {
-            // CProtoMsg* pMsg = nullptr;
-            // pMsg = new CProtoMsg;
-            // *pMsg = mCurMsg;
-            // mMsgQ.emplace(pMsg);
             mMsgQ.push(std::shared_ptr<CProtoMsg>(new CProtoMsg{mCurMsg}));
         }
     }

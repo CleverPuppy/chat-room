@@ -64,7 +64,7 @@ void ChatClient::fetchMsg(Client* clientPt, uint sec, uint usec)
             clientPt->msgManager.readData(clientFd, closedFds);
             while (auto msgPt = clientPt->msgManager.getMsg(clientFd))
             {
-                std::cout << msgPt->body << std::endl;
+                // std::cout << msgPt->body << std::endl;
                 ResponseStatus status = CProtoMsgManager::getMsgStatus(*msgPt);
                 auto& info = msgPt->body["info"];
                 RoomIDType roomid;

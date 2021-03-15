@@ -37,7 +37,6 @@ void CProtoMsgManager::readData(int fd)
         fprintf(stderr,"fd %d don't have valid decoder\n", fd);
         return;
     }
-    printf("fd form %d",fd);
     char buffer[2048];
     int read_num = 0;
     while (( read_num = read(fd, buffer, sizeof(buffer))) > 0)
@@ -58,7 +57,6 @@ void CProtoMsgManager::readData(int fd, std::vector<int>& closed)
         fprintf(stderr,"fd %d don't have valid decoder\n", fd);
         return;
     }
-    printf("fd form %d",fd);
     char buffer[2048];
     int read_num = 0;
     bool shouldClose = true;

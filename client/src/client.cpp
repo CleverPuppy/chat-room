@@ -107,7 +107,7 @@ void Client::waitingForLogin()
                     msgManager.readData(fd, closedFds);
                     if(auto msgPt = msgManager.getMsg(fd))
                     {
-                        std::cout << msgPt->body << std::endl;
+                        // std::cout << msgPt->body << std::endl;
                         if(CProtoMsgManager::isMsgSuccess(*msgPt))
                         {
                             token = msgPt->body["info"].asString();
@@ -265,9 +265,9 @@ void Client::waitingForCmdHint()
             "Cmds:\n"
             "Create Room:   \t\t createroom [roomname]\n"
             "Join Room:     \t\t joinroom [roomid]\n"
-            "Lock Room:      \t\t lockroom [roomid]\n"
-            "Unlock Room:    \t\t unlockroom [roomid]\n"
-            "Change Room:    \t\t chroom [roomid]\n"
+            "Lock Room:     \t\t lockroom [roomid]\n"
+            "Unlock Room:   \t\t unlockroom [roomid]\n"
+            "Change Room:   \t\t chroom [roomid]\n"
             "List Rooms:    \t\t lsroom\n"
             "Quit:          \t\t quit\n");
     roomCmdHint();
@@ -344,12 +344,12 @@ void Client::waitingForCmd()
     }
 }
 
-inline bool Client::isUserTokenValid() 
+bool Client::isUserTokenValid() 
 {
     return !token.empty();
 }
 
-inline bool Client::isRoomSelected() 
+bool Client::isRoomSelected() 
 {
     return currentRoomClient != nullptr;
 }
@@ -358,7 +358,7 @@ void Client::roomCmdHint()
 {
     if(isRoomSelected()){
         fprintf(stdout,
-                "Cmds for room %s[%d]"
+                "Cmds for Room [%s]-%d\n"
                 "SendMessage：  \t\t send [info]\n"
                 "change Room:   \t\t chroom [roomid]\n", 
                 currentRoomClient->name.c_str(), currentRoomClient->ID);
@@ -381,6 +381,7 @@ void Client::chRoom(std::shared_ptr<RoomClient>& ptr)
 
 void Client::roomChangedHint() 
 {   
-    fprintf(stdout, "Current in Room %s[%d]\n", currentRoomClient->name.c_str(),
+    fprintf(stdout, "Current in Room [%s]-%d\n", currentRoomClient->name.c_str(),
                                             currentRoomClient->ID);
+    roomCmdHint();
 }
