@@ -33,6 +33,12 @@ cd chat-room && mkdir build && cd build && cmake ../ && make
 - 运行server端 ```./bin/server```
 - 运行client端 ```./bin/client```
 
-## 下一步完善计划
+## TODO
 
-[x] server主动释放fd 
+- Server
+
+    [x] 主动释放fd 
+
+- Client
+
+    [x] 尝试使用更现代的UI
