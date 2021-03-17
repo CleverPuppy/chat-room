@@ -17,7 +17,7 @@
 ### 编译
 
 ```
-git clone https://github.com/CleverPuppy/chat-room.git
+git clone --recurse-submodules https://github.com/CleverPuppy/chat-room.git
 cd chat-room && mkdir build && cd build && cmake ../ && make
 ```
 
